@@ -1,1 +1,22 @@
-
+{
+  "nombreMarca": "Prueba1",
+  "colorMarca": "#ffd700",
+  "logoUrl": "https://i.ibb.co/v6PNhvNp/3292bca772f0c8069f439f09d02ee7d0.jpg",
+  "bannerUrl": "https://i.ibb.co/M5Jxn7x8/1776551120252.jpg",
+  "bioTexto": "Prueba 1 lindo lugar \nPrueba 1 tu lugar ",
+  "tanqueMinutos": 240,
+  "idSala": "sala-vip-salome-7722",
+  "pinSeguridad": "7722",
+  "whatsappDueno": "5493764369001",
+  "whatsappColaborador": "",
+  "tramos": [
+    {
+      "min": "15",
+      "precio": "2500",
+      "mp": "https://mpago.la/2SSJsN4",
+      "gpay": "",
+      "paypal": "",
+      "stripe": ""
+    }
+  ]
+}
