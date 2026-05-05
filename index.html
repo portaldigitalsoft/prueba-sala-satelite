@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala Satélite Virtual</title>
+    <style>
+        :root { --main-color: #ffd700; }
+        body { 
+            background-color: #0c0c0c; color: #e0e0e0; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; overflow-x: hidden;
+        }
+        .header-banner { width: 100%; height: 130px; object-fit: cover; border-bottom: 3px solid var(--main-color); }
+        .perfil-container { margin-top: -55px; position: relative; z-index: 10; }
+        .logo { 
+            width: 110px; height: 110px; border-radius: 50%; 
+            border: 3px solid var(--main-color); background: #1a1a1a;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .semaforo {
+            width: 22px; height: 22px; border-radius: 50%;
+            position: absolute; bottom: 8px; right: 8px;
+            border: 3px solid #0c0c0c;
+        }
+        .contenido { padding: 20px; width: 92%; max-width: 400px; text-align: center; }
+        h1 { margin: 15px 0 5px; font-size: 1.6rem; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+        p.bio { color: #aaa; font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; white-space: pre-line; }
+        
+        /* Estructura de Tramos Dinámicos */
+        .tramo-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; padding: 15px; margin-bottom: 15px;
+        }
+        .tramo-titulo { font-weight: bold; margin-bottom: 12px; color: #fff; font-size: 1.1rem; }
+        .pasarelas-grid { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        
+        .btn-pago {
+            text-decoration: none; padding: 10px 15px; border-radius: 8px;
+            font-weight: bold; font-size: 0.8rem; transition: 0.2s;
+            border: 1px solid var(--main-color); color: var(--main-color);
+            background: transparent; min-width: 60px;
+        }
+        .btn-pago:active { background: var(--main-color); color: #000; }
+
+        .btn-turno {
+            display: block; text-decoration: none; padding: 16px; border-radius: 14px;
+            font-weight: bold; text-align: center; border: 2px solid #58a6ff;
+            color: #58a6ff; margin-top: 20px;
+        }
+        
+        #panel-control {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); z-index: 100; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .modal { background: #111; padding: 30px; border-radius: 20px; border: 1px solid var(--main-color); width: 80%; text-align: center; }
+        input { width: 100%; padding: 15px; margin: 20px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 10px; text-align: center; font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+
+    <img id="banner" class="header-banner" src="" alt="">
+    
+    <div class="perfil-container" id="zona-gatillo">
+        <img id="logo" class="logo" src="" alt="Logo">
+        <div id="status-luz" class="semaforo"></div>
+    </div>
+
+    <div class="contenido">
+        <h1 id="nombre-profesional">...</h1>
+        <p id="bio" class="bio">Cargando...</p>
+        <div id="contenedor-tramos"></div>
+    </div>
+
+    <div id="panel-control">
+        <div class="modal">
+            <h2 style="color:var(--main-color)">COMANDO PROFESIONAL</h2>
+            <input type="password" id="pin-input" placeholder="PIN">
+            <button onclick="validarPin()" style="width:100%; padding:15px; background:var(--main-color); border:none; border-radius:10px; font-weight:bold; cursor:pointer;">ACCEDER</button>
+            <button onclick="cerrarPanel()" style="background:none; border:none; color:#666; margin-top:20px;">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        let configGlobal = {};
+        let ticsGatillo = 0;
+
+        async function inicializarSala() {
+            try {
+                const response = await fetch('config.json');
+                configGlobal = await response.json();
+
+                // Identidad Visual
+                document.title = configGlobal.nombreMarca;
+                document.getElementById('nombre-profesional').innerText = configGlobal.nombreMarca;
+                document.getElementById('logo').src = configGlobal.logoUrl;
+                document.getElementById('banner').src = configGlobal.bannerUrl || 'https://via.placeholder.com/800x200/1a1a1a/333';
+                document.documentElement.style.setProperty('--main-color', configGlobal.colorMarca);
+                document.getElementById('bio').innerText = configGlobal.bioTexto || '';
+
+                const luz = document.getElementById('status-luz');
+                const pnlTramos = document.getElementById('contenedor-tramos');
+
+                if (configGlobal.tanqueMinutos > 0) {
+                    luz.style.backgroundColor = "#238636";
+                    luz.style.boxShadow = "0 0 15px #238636";
+                    
+                    configGlobal.tramos.forEach(tramo => {
+                        const tramoDiv = document.createElement('div');
+                        tramoDiv.className = 'tramo-box';
+                        
+                        let pasarelasHTML = '';
+                        // Verificamos cada link para dibujar el botón correspondiente
+                        if (tramo.mp) pasarelasHTML += `<a href="${tramo.mp}" class="btn-pago">MP</a>`;
+                        if (tramo.gpay) pasarelasHTML += `<a href="${tramo.gpay}" class="btn-pago">GPAY</a>`;
+                        if (tramo.paypal) pasarelasHTML += `<a href="${tramo.paypal}" class="btn-pago">PAYPAL</a>`;
+                        if (tramo.stripe) pasarelasHTML += `<a href="${tramo.stripe}" class="btn-pago">STRIPE</a>`;
+
+                        tramoDiv.innerHTML = `
+                            <div class="tramo-titulo">${tramo.min} min - $${tramo.precio}</div>
+                            <div class="pasarelas-grid">${pasarelasHTML}</div>
+                        `;
+                        pnlTramos.appendChild(tramoDiv);
+                    });
+                } else {
+                    luz.style.backgroundColor = "#da3633";
+                    luz.style.boxShadow = "0 0 15px #da3633";
+                    document.getElementById('bio').innerText = "Agenda completa.\nConsultar disponibilidad próxima.";
+                    
+                    const btnTurno = document.createElement('a');
+                    btnTurno.className = 'btn-turno';
+                    const msg = encodeURIComponent("Hola, quiero consultar por un turno.");
+                    btnTurno.href = `https://wa.me/${configGlobal.whatsappColaborador}?text=${msg}`;
+                    btnTurno.innerText = "WHATSAPP COLABORADOR";
+                    pnlTramos.appendChild(btnTurno);
+                }
+
+                // Gatillo 4 toques
+                document.getElementById('zona-gatillo').onclick = () => {
+                    ticsGatillo++;
+                    if(ticsGatillo === 4) {
+                        document.getElementById('panel-control').style.display = 'flex';
+                        ticsGatillo = 0;
+                    }
+                    setTimeout(() => { ticsGatillo = 0; }, 3000);
+                };
+
+            } catch (e) { console.error(e); }
+        }
+
+        function validarPin() {
+            if(document.getElementById('pin-input').value === configGlobal.pinSeguridad) {
+                window.location.href = `https://meet.jit.si/${configGlobal.idSala}`;
+            } else {
+                alert("PIN incorrecto");
+            }
+        }
+
+        function cerrarPanel() { document.getElementById('panel-control').style.display = 'none'; }
+        inicializarSala();
+    </script>
+</body>
+  </html>
+
